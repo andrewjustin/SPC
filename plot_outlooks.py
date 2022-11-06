@@ -177,7 +177,8 @@ def categorical_convective_outlook(outlook_day, year, month, day, time, outlook_
                 marker = '*'
                 facecolor = 'blue'
                 edgecolor = 'black'
-                num_sigwind_reports += 1
+                if report[0] > 74:
+                    num_sigwind_reports += 1
                 zorder = 13
                 s = 10
             elif report[0] > 74:
@@ -211,30 +212,38 @@ def categorical_convective_outlook(outlook_day, year, month, day, time, outlook_
         hail_reports = hail_reports.values
         num_hail_reports = 0
         num_sighail_reports = 0
-        max_hail = np.round(np.max(hail_reports, axis=0)[0]/100, 2)
-        for report in hail_reports:
-            if report[0] < 200:
-                marker = 'o'
-                facecolor = 'green'
-                edgecolor = 'black'
-                num_hail_reports += 1
-                zorder = 11
-                size = 3
-            elif report[0]/100 != max_hail:
-                marker = '^'
-                facecolor = 'black'
-                edgecolor = 'gray'
-                num_sighail_reports += 1
-                zorder = 12
-                size = 4
-            else:
-                marker = '*'
-                facecolor = 'green'
-                edgecolor = 'black'
-                num_sighail_reports += 1
-                zorder = 13
-                size = 10
-            plt.scatter(report[2], report[1], s=size, marker=marker, edgecolor=edgecolor, linewidth=0.2, facecolor=facecolor, transform=ccrs.PlateCarree(), zorder=zorder)
+        try:
+            max_hail = np.round(np.max(hail_reports, axis=0)[0]/100, 2)
+        except ValueError:
+            max_hail = 'N/A'
+            pass
+        else:
+            for report in hail_reports:
+                if report[0]/100 == max_hail:
+                    marker = '*'
+                    facecolor = 'green'
+                    edgecolor = 'black'
+                    if report[0] >= 200:
+                        num_sighail_reports += 1
+                    zorder = 13
+                    size = 10
+                elif report[0] >= 200:
+                    marker = '^'
+                    facecolor = 'black'
+                    edgecolor = 'gray'
+                    num_sighail_reports += 1
+                    zorder = 12
+                    size = 4
+                else:
+                    marker = 'o'
+                    facecolor = 'green'
+                    edgecolor = 'black'
+                    num_hail_reports += 1
+                    zorder = 11
+                    size = 3
+
+                plt.scatter(report[2], report[1], s=size, marker=marker, edgecolor=edgecolor, linewidth=0.2, facecolor=facecolor, transform=ccrs.PlateCarree(), zorder=zorder)
+
         report_HAIL = plt.scatter(0, 0, s=8, marker='o', edgecolor='black', linewidth=0.2, facecolor='green', transform=ccrs.PlateCarree(), label=f'Hail ({num_hail_reports})')
         report_SIGHAIL = plt.scatter(0, 0, s=10, marker='^', edgecolor='gray', linewidth=0.2, facecolor='black', transform=ccrs.PlateCarree(), label=f'Sig. Hail ({num_sighail_reports})')
         report_MAXHAIL = plt.scatter(0, 0, s=14, marker='*', edgecolor='black', linewidth=0.2, facecolor='green', transform=ccrs.PlateCarree(), label=f'Largest hail report ({max_hail}")')
@@ -247,6 +256,9 @@ def categorical_convective_outlook(outlook_day, year, month, day, time, outlook_
             report_legend_title = f'Filtered storm reports ({total_storm_reports})'
         else:
             report_legend_title = f'Storm reports ({total_storm_reports})'
+
+        if remove_unknowns:
+            report_legend_title += '*'
 
         reports_legend = plt.legend(handles=[report_TOR, report_HAIL, report_WIND, report_SIGHAIL, report_SIGWIND, report_MAXHAIL, report_MAXWIND], loc='lower left', ncol=1, fontsize=4, title=report_legend_title, title_fontsize=5)
         plt.gca().add_artist(reports_legend)
